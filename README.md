@@ -70,4 +70,3 @@ Your Electron app should now work correctly.
 ## Setting up script
 
 All you really need is the video ID in main.js and max messages count in renderer.js, in main.js edit the `VIDEO_ID` variable to your YouTube video ID with live chat, in renderer.js edit the `MAX_MESSAGES` variable to the maximum amount of messages that can be shown in the live chat app.
-NOTE: this is untested for premires with live chat.
