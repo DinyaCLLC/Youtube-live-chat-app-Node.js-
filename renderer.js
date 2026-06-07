@@ -25,7 +25,7 @@ function renderMessageParts(parts) {
 	return frag;
 }
 
-function addMessage(timestamp, rank, authorID, authorhandler, message, pfp) {
+function addMessage(timestamp, ranks, authorID, authorhandler, message, pfp) {
 	const div = document.createElement("div");
 
 	const img = document.createElement("img");
@@ -52,8 +52,8 @@ function addMessage(timestamp, rank, authorID, authorhandler, message, pfp) {
 	const message_span = document.createElement("span");
 	message_span.appendChild(renderMessageParts(message));
 
-	if (rank)
-		div.append(img, ' ', timestamp_text, ' ', rank, ' ', author_text, ': ', message_span);
+	if (ranks)
+		div.append(img, ' ', timestamp_text, ' ', ranks, ' ', author_text, ': ', message_span);
 	else
 		div.append(img, ' ', timestamp_text, ' ', author_text, ': ', message_span);
 
@@ -66,6 +66,6 @@ function addMessage(timestamp, rank, authorID, authorhandler, message, pfp) {
 	box.scrollTop = box.scrollHeight;
 }
 
-window.api.onMessage(({ timestamp, rank, authorID, authorhandler, message, pfp }) => {
-    addMessage(timestamp, rank, authorID, authorhandler, message, pfp);
+window.api.onMessage(({ timestamp, ranks, authorID, authorhandler, message, pfp }) => {
+    addMessage(timestamp, ranks, authorID, authorhandler, message, pfp);
 });
