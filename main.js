@@ -24,7 +24,7 @@ let win;
 async function getInitialContinuation(videoId) {
  const res = await fetch(`https://www.youtube.com/live_chat?v=${videoId}`, {
   headers: {
-   // pretend to have a modern browser to shut YouTube up
+   // pretend to have a modern browser so YouTube doesn't complain
    "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
    "Accept-Language": 'en-US,en;q=0.9', // english
   }
@@ -115,14 +115,14 @@ async function pollChat() {
     method: "POST",
     headers: {
      "Content-Type": "application/json",
-     // pretending to have a modern browser to shut YouTube up
+     // pretending to have a modern browser so YouTube doesn't complain
      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
     },
     body: JSON.stringify({
      context: {
       client: {
        clientName: "WEB",
-       clientVersion: '2.20260603.05.00' // pretending to have a new browser version to shut YouTube up
+       clientVersion: '2.20260603.05.00' // pretending to have a new browser version so YouTube doesn't complain
       }
      },
      continuation: newContinuation
