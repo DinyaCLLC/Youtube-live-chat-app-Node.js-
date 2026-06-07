@@ -110,8 +110,7 @@ function parseMessageRuns(runs = []) {
 async function pollChat() {
  while (true) {
   try {
-   // split URL cuz YouTube truncates it when typing in a post
-   const response = await fetch("https://www.youtube.com/" + "youtubei/v1/live_chat/get_live_chat?prettyPrint=false", {
+   const response = await fetch("https://www.youtube.com/youtubei/v1/live_chat/get_live_chat?prettyPrint=false", {
     method: "POST",
     headers: {
      "Content-Type": "application/json",
