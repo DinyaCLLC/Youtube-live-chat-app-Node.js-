@@ -74,9 +74,9 @@ function formatTimestamp(timestamp) {
 }
 
 // Push chat to UI
-function pushToUI(timestamp, authorID, authorhandler, message, pfp) {
+function pushToUI(timestamp, rank, authorID, authorhandler, message, pfp) {
  if (win) {
-  win.webContents.send('chat-message', { timestamp, authorID, authorhandler, message, pfp });
+  win.webContents.send('chat-message', { timestamp, rank, authorID, authorhandler, message, pfp });
  }
 }
 
@@ -170,12 +170,16 @@ async function pollChat() {
      renderer.authorPhoto?.thumbnails?.[0]?.url;
 
     const timestamp = formatTimestamp(renderer.timestampUsec);
+	rank = undefined;
+	if (renderer.authorBadges)
+		rank = renderer.authorBadges[0]?.liveChatAuthorBadgeRenderer?.accessibility?.accessibilityData?.label;
     const message = parseMessageRuns(renderer.message?.runs ?? []);
     const authorID = renderer.authorExternalChannelId ?? "Unknown";
     const authorhandler = renderer.authorName?.simpleText ?? "Unknown";
 
     pushToUI(
      timestamp,
+	 rank,
      authorID,
      authorhandler,
      message,
