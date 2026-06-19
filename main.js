@@ -1,14 +1,8 @@
-/*
-NOTE: this error might appear in the console:
-error: ReferenceError: newContinuation is not defined
-
-if it doesn't repeat consntantly, you can ignore it
-*/
-
 // variables for chat loop
 const seenMessageIds = new Set();
 const VIDEO_ID = "FbFE96dcxGE"; // video ID here, this is just a sample video ID
 let numTimes = 0;
+let newContinuation;
 
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
 
