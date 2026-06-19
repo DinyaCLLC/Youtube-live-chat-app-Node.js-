@@ -1,6 +1,53 @@
 const box = document.getElementById("chat");
+const dialog = document.getElementById("dialog");
+const dlgInput = document.getElementById("dlg-input");
+const dlgApply = document.getElementById("dlg-apply");
+const dlgCancel = document.getElementById("dlg-cancel");
 
 const MAX_MESSAGES = 200; /* put the max amount of messages here */
+
+let currentVideoId = '';
+
+window.api.getConfig().then(config => {
+  currentVideoId = config.video_id || '';
+});
+
+function showDialog() {
+  dlgInput.value = currentVideoId;
+  dialog.style.display = 'block';
+  dlgInput.focus();
+  dlgInput.select();
+}
+
+function hideDialog() {
+  dialog.style.display = 'none';
+}
+
+window.api.onShowVideoPrompt(showDialog);
+
+dlgApply.addEventListener('click', async () => {
+  const id = dlgInput.value.trim();
+  if (!id) return;
+
+  dlgApply.disabled = true;
+  const result = await window.api.switchVideo(id);
+  if (result.success) {
+    currentVideoId = id;
+    hideDialog();
+  }
+  dlgApply.disabled = false;
+});
+
+dlgCancel.addEventListener('click', hideDialog);
+
+dlgInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') dlgApply.click();
+  if (e.key === 'Escape') hideDialog();
+});
+
+window.api.onClearChat(() => {
+  box.innerHTML = '';
+});
 
 function renderMessageParts(parts) {
 	const frag = document.createDocumentFragment();
