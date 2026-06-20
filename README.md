@@ -1,6 +1,7 @@
 # YouTube Live Chat App
 
 This is a Node.js project that lets you view YouTube live chat from a given video ID.
+NOTE: if you want to use transparent theme, rename main-transparent-support.js to main.js
 
 ## Requirements
 
