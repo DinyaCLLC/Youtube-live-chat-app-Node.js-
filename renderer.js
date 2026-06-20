@@ -1,19 +1,30 @@
 const box = document.getElementById("chat");
 const dialog = document.getElementById("dialog");
+const dlgTitle = document.getElementById("dlg-title");
 const dlgInput = document.getElementById("dlg-input");
 const dlgApply = document.getElementById("dlg-apply");
 const dlgCancel = document.getElementById("dlg-cancel");
 
-const MAX_MESSAGES = 200; /* put the max amount of messages here */
-
 let currentVideoId = '';
+let currentMaxMessages = 200;
+let dialogMode = 'video';
 
 window.api.getConfig().then(config => {
   currentVideoId = config.video_id || '';
+  currentMaxMessages = config.max_messages || 200;
 });
 
-function showDialog() {
-  dlgInput.value = currentVideoId;
+function showDialog(mode) {
+  dialogMode = mode;
+  if (mode === 'video') {
+    dlgTitle.textContent = 'Change Video ID';
+    dlgInput.value = currentVideoId;
+    dlgInput.placeholder = 'Enter YouTube Video ID';
+  } else {
+    dlgTitle.textContent = 'Change Max Messages';
+    dlgInput.value = currentMaxMessages;
+    dlgInput.placeholder = 'Enter max messages count';
+  }
   dialog.style.display = 'block';
   dlgInput.focus();
   dlgInput.select();
@@ -23,18 +34,30 @@ function hideDialog() {
   dialog.style.display = 'none';
 }
 
-window.api.onShowVideoPrompt(showDialog);
+window.api.onShowVideoPrompt(() => showDialog('video'));
+window.api.onShowMaxMessagesPrompt(() => showDialog('maxMessages'));
 
 dlgApply.addEventListener('click', async () => {
-  const id = dlgInput.value.trim();
-  if (!id) return;
+  const val = dlgInput.value.trim();
+  if (!val) return;
 
   dlgApply.disabled = true;
-  const result = await window.api.switchVideo(id);
-  if (result.success) {
-    currentVideoId = id;
-    hideDialog();
+
+  if (dialogMode === 'video') {
+    const result = await window.api.switchVideo(val);
+    if (result.success) {
+      currentVideoId = val;
+      hideDialog();
+    }
+  } else {
+    const count = parseInt(val, 10);
+    if (!isNaN(count) && count > 0) {
+      await window.api.setMaxMessages(count);
+      currentMaxMessages = count;
+      hideDialog();
+    }
   }
+
   dlgApply.disabled = false;
 });
 
@@ -106,7 +129,7 @@ function addMessage(timestamp, ranks, authorID, authorhandler, message, pfp) {
 
 	box.appendChild(div);
 
-	while (box.children.length > MAX_MESSAGES) {
+	while (box.children.length > currentMaxMessages) {
 		box.removeChild(box.firstChild);
 	}
 

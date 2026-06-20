@@ -6,7 +6,13 @@ const path = require('path');
 const configPath = path.join(__dirname, 'config.json');
 
 function readConfig() {
-  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch {
+    const defaults = { video_id: '', max_messages: 200 };
+    writeConfig(defaults);
+    return defaults;
+  }
 }
 
 function writeConfig(config) {
@@ -25,6 +31,13 @@ const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 
 ipcMain.handle('open-external', (_, url) => {
     shell.openExternal(url);
+});
+
+ipcMain.handle('set-max-messages', (_, count) => {
+  const config = readConfig();
+  config.max_messages = count;
+  writeConfig(config);
+  return { success: true };
 });
 
 ipcMain.handle('get-config', () => {
@@ -281,13 +294,20 @@ function setupMenu() {
       ]
     },
     {
-      label: 'Video',
+      label: 'Live',
       submenu: [
         {
           label: 'Change Video ID...',
           accelerator: 'CmdOrCtrl+Shift+V',
           click: () => {
             if (win) win.webContents.send('show-video-prompt');
+          }
+        },
+        {
+          label: 'Change Max Messages...',
+          accelerator: 'CmdOrCtrl+Shift+M',
+          click: () => {
+            if (win) win.webContents.send('show-max-messages-prompt');
           }
         }
       ]
