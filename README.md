@@ -9,17 +9,17 @@ This is a Node.js project that lets you view YouTube live chat from a given vide
 ## Setup Instructions
 
 1. Download all project files into a folder.
-2. Open **Command Prompt** in that folder.
+2. Open your **Terminal** in that folder.
 3. Run the following commands:
 
 ```bash
 npm init -y
 npm install electron@latest --save-dev
-````
+```
 
 This installs Electron into the project folder.
 
-4. Open `run.ps1`.
+4. Execute `run.ps1` (or `run.sh` on Linux or Mac).
 
 The first time you run it, you will see:
 
@@ -33,4 +33,4 @@ Wait until it reaches 100% before continuing.
 
 ## Setting up script
 
-All you really need is the video ID in main.js and max messages count in renderer.js, in main.js edit the `VIDEO_ID` variable to your YouTube video ID with live chat, in renderer.js edit the `MAX_MESSAGES` variable to the maximum amount of messages that can be shown in the live chat app.
+All you really need is the video ID and max messages count in config.json.

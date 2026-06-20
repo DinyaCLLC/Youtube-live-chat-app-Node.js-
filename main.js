@@ -1,13 +1,71 @@
-// variables for chat loop
+const fs = require('fs');
+const path = require('path');
+
+const configPath = path.join(__dirname, 'config.json');
+
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch {
+    const defaults = { video_id: '', max_messages: 200 };
+    writeConfig(defaults);
+    return defaults;
+  }
+}
+
+function writeConfig(config) {
+  fs.writeFileSync(configPath, JSON.stringify(config, null, '\t'));
+}
+
+// Variables for chat loop
 const seenMessageIds = new Set();
-const VIDEO_ID = "FbFE96dcxGE"; // video ID here, this is just a sample video ID
+let currentVideoId = "";
 let numTimes = 0;
 let newContinuation;
+let pollRunning = false;
+let pollingStopped = null;
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 
 ipcMain.handle('open-external', (_, url) => {
     shell.openExternal(url);
+});
+
+ipcMain.handle('set-max-messages', (_, count) => {
+  const config = readConfig();
+  config.max_messages = count;
+  writeConfig(config);
+  return { success: true };
+});
+
+ipcMain.handle('get-config', () => {
+  return readConfig();
+});
+
+ipcMain.handle('switch-video', async (_, newVideoId) => {
+  try {
+    if (pollRunning) {
+      await new Promise(resolve => {
+        pollingStopped = resolve;
+      });
+    }
+
+    currentVideoId = newVideoId;
+    seenMessageIds.clear();
+
+    const config = readConfig();
+    config.video_id = newVideoId;
+    writeConfig(config);
+
+    if (win) win.webContents.send('clear-chat');
+
+    newContinuation = await getInitialContinuation(currentVideoId);
+    pollChat();
+    return { success: true };
+  } catch (e) {
+    console.log("switch-video error:", e);
+    return { success: false, error: e.message };
+  }
 });
 
 app.disableHardwareAcceleration();
@@ -26,9 +84,9 @@ async function getInitialContinuation(videoId) {
 
  const html = await res.text();
 
- // use this to debug the HTML: console.log(html);
+ // Use this to debug the HTML: console.log(html);
 
- const match = html.match(/"continuation":"([^"]+)"/); // extract continuation from returned HTML
+ const match = html.match(/"continuation":"([^"]+)"/); // Extract continuation from returned HTML
 
  if (!match) {
   console.log(html);
@@ -84,7 +142,7 @@ function parseMessageRuns(runs = []) {
   if (item.emoji?.emojiId) {
    const emoji = item.emoji;
 
-   // pick thumbnail[1] or fallback to [0]
+   // Pick thumbnail[1] or fallback to [0]
    const thumb =
     emoji.image?.thumbnails?.[1]?.url ||
     emoji.image?.thumbnails?.[0]?.url;
@@ -102,7 +160,15 @@ function parseMessageRuns(runs = []) {
 
 // Chat loop
 async function pollChat() {
+  pollRunning = true;
+  try {
  while (true) {
+    if (pollingStopped) {
+      const resolve = pollingStopped;
+      pollingStopped = null;
+      resolve();
+      return;
+    }
   try {
    const response = await fetch("https://www.youtube.com/youtubei/v1/live_chat/get_live_chat?prettyPrint=false", {
     method: "POST",
@@ -166,7 +232,7 @@ async function pollChat() {
     const timestamp = formatTimestamp(renderer.timestampUsec);
 	ranks = undefined;
 	if (renderer.authorBadges)
-		// this was hard but i got it
+		// This was hard but i got it
 		ranks = renderer.authorBadges.map(badge => badge.liveChatAuthorBadgeRenderer.accessibility.accessibilityData.label).join(', ');
     const message = parseMessageRuns(renderer.message?.runs ?? []);
     const authorID = renderer.authorExternalChannelId ?? "Unknown";
@@ -181,13 +247,72 @@ async function pollChat() {
      pfp
     );
    }
-  } catch (e) {
-   console.log("error:", e);
+   } catch (e) {
+    console.log("error:", e);
 
-   // Avoid a tight error loop
-   await new Promise(resolve => setTimeout(resolve, 1000));
+    // Avoid a tight error loop
+    await new Promise(resolve => setTimeout(resolve, 1000));
+   }
   }
+ } finally {
+  pollRunning = false;
  }
+}
+
+// Menu
+function setupMenu() {
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { role: 'resetZoom' }
+      ]
+    },
+    {
+      label: 'Live',
+      submenu: [
+        {
+          label: 'Change Video ID...',
+          accelerator: 'CmdOrCtrl+Shift+V',
+          click: () => {
+            if (win) win.webContents.send('show-video-prompt');
+          }
+        },
+        {
+          label: 'Change Max Messages...',
+          accelerator: 'CmdOrCtrl+Shift+M',
+          click: () => {
+            if (win) win.webContents.send('show-max-messages-prompt');
+          }
+        }
+      ]
+    },
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
 // Window
@@ -200,14 +325,16 @@ function createWindow() {
   }
  });
 
- win.loadFile("index.html");
+  win.loadFile("index.html");
+ }
 
- pollChat();
-}
-
-// app.whenReady().then(createWindow);
 app.whenReady().then(async () => {
+ setupMenu();
  createWindow();
- newContinuation = await getInitialContinuation(VIDEO_ID);
- pollChat();
+ const config = readConfig();
+ currentVideoId = config.video_id;
+ if (currentVideoId) {
+  newContinuation = await getInitialContinuation(currentVideoId);
+  pollChat();
+ }
 });
